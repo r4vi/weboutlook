@@ -35,7 +35,7 @@ import asyncore, asynchat, socket, sys, re, pdb
 # relative import
 from scraper import InvalidLogin, OutlookWebScraper
 
-__version__ = 'Samuar\'s Bader->POP3 Server (Beta)'
+__version__ = 'samuar.com OWA-POP3 Server v0.4(Beta)'
 
 TERMINATOR = '\r\n'
 WEBMAIL_SERVER = 'https://mail.bader.mod.uk/'
@@ -79,8 +79,8 @@ class POPChannel(asynchat.async_chat):
         else:
             command = line[:i].upper()
             arg = line[i+1:].strip()
+        print(' got: %s' % line)        
         method = getattr(self, 'pop_' + command, None)
-        print(' got: %s' % line)
         if not method:
             self.push('-ERR Error : command "%s" not implemented' % command)
             return
@@ -128,7 +128,7 @@ class POPChannel(asynchat.async_chat):
                     found = True
             if not found:
                 self.push('-ERR no such message, only %d messages in maildrop' %(len(self.inbox_cache)))
-            self.push(".")
+            #self.push(".")
 
 
     def pop_UIDL(self, arg):
@@ -146,7 +146,7 @@ class POPChannel(asynchat.async_chat):
                     found = True
             if not found:
                 self.push('-ERR no such message, only %d messages in maildrop' % (len(self.inbox_cache)))
-            self.push(".")
+            #self.push(".")
 
     def pop_RETR(self, arg):
         if not arg:
@@ -165,6 +165,12 @@ class POPChannel(asynchat.async_chat):
             for line in quote_dots(msg.split(TERMINATOR)):
                 self.push(line)
             self.push('.')
+
+    def pop_CAPA(self, arg):
+        self.push('+OK Capability list follows')
+        self.push('USER')
+        self.push('UIDL')
+        self.push('.')
             
     def pop_DELE(self, arg):
         if not arg:
@@ -178,7 +184,6 @@ class POPChannel(asynchat.async_chat):
 
     def pop_QUIT(self, arg):
         self.push('+OK Goodbye')
-        print '+OK Goodye'
         self.close_when_done()
         if self.quit_after_one:
             # This SystemExit gets propogated to handle_error(),

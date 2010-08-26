@@ -14,3 +14,14 @@ Line 90 Changed to fix newline in Cookie output as per Issue 2 of [2] (for my do
 References
 [1] (http://www.ietf.org/rfc/rfc1939.txt)
 [2] (http://code.google.com/p/weboutlook/)
+
+
+Changelog (0.4-SPH)
+===================
+
+Tested with Outlook 2007, Outlook Express 6, Thunderbird and Evolution
+
+[popdaemon.py]
+Implemented CAPA command [Lists USER and UIDL]
+Fixed LIST and UIDL commands
+	These returned a "." for a single line message, which tripped up Outlook Express 6.
