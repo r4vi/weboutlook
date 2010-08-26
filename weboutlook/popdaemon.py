@@ -13,10 +13,8 @@ background.
 Note that you'll have to specify WEBMAIL_SERVER in this file.
 """
 
-# Based on gmailpopd.py by follower@myrealbox.com,
-# which was in turn based on smtpd.py by Barry Warsaw.
-#
-# Copyright (C) 2006 Adrian Holovaty <holovaty@gmail.com>
+# Copyright (C) 2006 Adrian Holovaty <holovaty at gmail dot com>, and 2007 
+# Cloudburst, LLC <evan at cloudbur dot st>
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -32,15 +30,15 @@ Note that you'll have to specify WEBMAIL_SERVER in this file.
 # this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 # Place, Suite 330, Boston, MA 02111-1307 USA
 
-import asyncore, asynchat, socket, sys
+import asyncore, asynchat, socket, sys, re, pdb
 
 # relative import
 from scraper import InvalidLogin, OutlookWebScraper
 
-__version__ = 'Python Outlook Web Access POP3 proxy version 0.0.1'
+__version__ = 'Samuar\'s Bader->POP3 Server (Beta)'
 
 TERMINATOR = '\r\n'
-WEBMAIL_SERVER = 'http://mywebmail.example.com'
+WEBMAIL_SERVER = 'https://mail.bader.mod.uk/'
 
 def quote_dots(lines):
     for line in lines:
@@ -59,6 +57,7 @@ class POPChannel(asynchat.async_chat):
 
     # Overrides base class for convenience
     def push(self, msg):
+#        print("said: %s" % msg)
         asynchat.async_chat.push(self, msg + TERMINATOR)
 
     # Implementation of base class abstract method
@@ -81,6 +80,7 @@ class POPChannel(asynchat.async_chat):
             command = line[:i].upper()
             arg = line[i+1:].strip()
         method = getattr(self, 'pop_' + command, None)
+        print(' got: %s' % line)
         if not method:
             self.push('-ERR Error : command "%s" not implemented' % command)
             return
@@ -107,8 +107,11 @@ class POPChannel(asynchat.async_chat):
             self.msg_cache = [self.scraper.get_message(msg_id) for msg_id in self.inbox_cache]
 
     def pop_STAT(self, arg):
-        dropbox_size = sum([len(msg) for msg in self.msg_cache])
-        self.push('+OK %d %d' % (len(self.inbox_cache), dropbox_size))
+            dropbox_size = sum([len(msg) for msg in self.msg_cache])
+            self.push('+OK %d %d' % (len(self.inbox_cache), dropbox_size))
+
+    def pop_NOOP(self, arg):
+        self.push('+OK')
 
     def pop_LIST(self, arg):
         if not arg:
@@ -118,12 +121,37 @@ class POPChannel(asynchat.async_chat):
                 self.push('%d %d' % (i+1, len(msg)))
             self.push(".")
         else:
-            # TODO: Handle per-msg LIST commands
-            raise NotImplementedError
+            found = False
+            for i, msg in enumerate(self.msg_cache):
+                if (i+1) == int(arg):
+                    self.push('+OK %d %d' % (i+1, len(msg)))
+                    found = True
+            if not found:
+                self.push('-ERR no such message, only %d messages in maildrop' %(len(self.inbox_cache)))
+            self.push(".")
+
+
+    def pop_UIDL(self, arg):
+        if not arg:
+            num_messages = len(self.inbox_cache)
+            self.push('+OK')
+            for i, msg in enumerate(self.msg_cache):
+                self.push('%d %s' % (i+1, re.search(r"Message-ID: <(.*?)>", msg, re.S | re.I).group(1)))
+            self.push(".")
+        else:
+            found = False
+            for i, msg in enumerate(self.msg_cache):
+                if (i+1) == int(arg):
+                    self.push('+OK %d %s' % (i+1, re.search(r"Message-ID: <(.*?)>", msg, re.S | re.I).group(1)))
+                    found = True
+            if not found:
+                self.push('-ERR no such message, only %d messages in maildrop' % (len(self.inbox_cache)))
+            self.push(".")
 
     def pop_RETR(self, arg):
         if not arg:
             self.push('-ERR: Syntax: RETR msg')
+            print '-ERR: Syntax: RETR msg'
         else:
             # TODO: Check request is in range.
             msg_index = int(arg) - 1
@@ -132,16 +160,25 @@ class POPChannel(asynchat.async_chat):
             msg = msg.lstrip() + TERMINATOR
 
             self.push('+OK')
+            print '+OK (pop_RETR l_138)'
 
             for line in quote_dots(msg.split(TERMINATOR)):
                 self.push(line)
             self.push('.')
-
-            # Delete the message
+            
+    def pop_DELE(self, arg):
+        if not arg:
+            self.push('-ERR: Syntax: RETR msg')
+        else:
+            msg_index = int(arg) - 1
+            msg_id = self.inbox_cache[msg_index]        
             self.scraper.delete_message(msg_id)
+            self.push('+OK')
+#            self.push(".")
 
     def pop_QUIT(self, arg):
         self.push('+OK Goodbye')
+        print '+OK Goodye'
         self.close_when_done()
         if self.quit_after_one:
             # This SystemExit gets propogated to handle_error(),
@@ -180,7 +217,7 @@ if __name__ == '__main__':
     parser.add_option('--once', action='store_true', dest='once',
         help='Serve one POP transaction and then quit. (Server runs forever by default.)')
     options, args = parser.parse_args()
-    proxy = POP3Proxy(('127.0.0.1', 8110), options.once is True)
+    proxy = POP3Proxy(('0.0.0.0', 2221), options.once is True)
     try:
         asyncore.loop()
     except KeyboardInterrupt:

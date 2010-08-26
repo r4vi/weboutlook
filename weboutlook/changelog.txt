@@ -1,0 +1,16 @@
+Changelog (0.33-SPH)
+====================
+
+Submitted by Sam Holland (samuar@gmail.com)
+
+[popdaemon.py]
+Implemented per-msg LIST commands as per RFC1939[1]
+Implemented per-msg UIDL commands as per RFC1939[1]
+
+[scraper.py]
+Line 90 Changed to fix newline in Cookie output as per Issue 2 of [2] (for my domain mail.bader.mod.uk)
+
+
+References
+[1] (http://www.ietf.org/rfc/rfc1939.txt)
+[2] (http://code.google.com/p/weboutlook/)
