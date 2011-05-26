@@ -1,3 +1,5 @@
 weboutlook_conf.py
+folder_clear.py
 *.swp
 *.pyc
+.idea/

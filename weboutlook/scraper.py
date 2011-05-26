@@ -91,6 +91,9 @@ def create_opener(base_url, username, password):
     logger.debug(locals())
     password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
     password_mgr.add_password(None, base_url, username, password)
+
+    #proxy_support = urllib2.ProxyHandler({"https" : "localhost:8888"})
+
     handler = urllib2.HTTPBasicAuthHandler(password_mgr)
     return urllib2.build_opener(handler)
 
@@ -160,7 +163,22 @@ class OutlookWebScraper(CookieScraper):
         html        = self.get_page(url=url)
         if 'You could not be logged on to Outlook Web Access' in html:
             raise InvalidLogin
-        m = re.search(r'(?i)<BASE href="([^"]*)">', html)
+        #import pdb; pdb.set_trace()
+        matcher = re.compile(r'(?i)<BASE href="([^"]*)">', re.IGNORECASE)
+        m = matcher.search(html)
+        if not m:
+            forms_dest = urlparse.urljoin(self.domain, 'CookieAuth.dll?Logon')
+            post_data = urllib.urlencode({
+                'destination':'Z2F',
+                'flags':'0',
+                'username':self.username,
+                'password':self.password,
+                'SubmitCreds':'Log On',
+                'trusted':'0'})
+            html = self.get_page(forms_dest, post_data)
+            
+        m = matcher.search(html)
+        import pdb; pdb.set_trace()
         if not m:
             raise RetrievalError, "Couldn't find <base href> on page after logging in."
         self.base_href      = m.group(1)
@@ -173,7 +191,7 @@ class OutlookWebScraper(CookieScraper):
         Inbox, regardless of whether they've already been read.
         """
         logger.debug(locals())
-        return self.get_folder('Inbox')
+        return self.get_folder('/Inbox')
     
     
     def get_folder(self, folder_name, page=1):
@@ -241,8 +259,7 @@ class OutlookWebScraper(CookieScraper):
         logger.debug(locals())
         if not self.is_logged_in: self.login()
 	
-        return self.get_page(self.base_href + folder, urllib.urlencode({
-            'Cmd': 'delete',
-            'ReadForm': '1',
-        }) +'&'+urllib.urlencode([('MsgId',x) for x in msgid_list]))
+        return self.get_page(self.base_href + folder,
+                             '&'.join(urllib.urlencode({'Cmd': 'delete','ReadForm': '1',})
+                                      ,urllib.urlencode([('MsgId',x) for x in msgid_list])))
     
