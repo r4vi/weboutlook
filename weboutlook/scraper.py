@@ -176,7 +176,7 @@ class OutlookWebScraper(CookieScraper):
         return self.get_folder('Inbox')
     
     
-    def get_folder(self, folder_name):
+    def get_folder(self, folder_name, page=1):
         """
         Returns the message IDs for all messages on the first page of the
         folder with the given name, regardless of whether the messages have
@@ -184,12 +184,39 @@ class OutlookWebScraper(CookieScraper):
         """
         logger.debug(locals())
         if not self.is_logged_in: self.login()
-        url = self.base_href + urllib.quote(folder_name) + '/?Cmd=contents'
+        url = self.base_href + urllib.quote(folder_name) + '/?Cmd=contents&View=Messages&Page=%s' % page
         html = self.get_page(url)
+        page_info = re.search(r'<[^<>]+name="Page"[^<>]+>', html)
+        if page_info:
+            page_num = re.search(r'value="(\d+)', page_info.group())
+            if page_num and int(page_num.group(1)) < page:
+                raise  RetrievalError("Invalid page number: %s is too large." % page)
         message_urls = re.findall(r'(?i)NAME=MsgID value="([^"]*)"', html)
         return message_urls
     
-    
+    def get_folder_all_messages(self, folder_name):
+        """
+        Returns the message IDs for all messages in the entire folder
+        of a given name, regardless of whether or not the messages have
+        already been read. The folder name is case insensitive.
+        """
+        page = 1
+        email_set = set()
+        emails = []
+        while True:
+            try:
+                message_ids = self.get_folder(folder_name, page)
+            except RetrievalError, e:
+                if not e.message.startswith('Invalid page'):
+                    raise
+                break
+            else:
+                for message_id in message_ids:
+                    if message_id not in email_set:
+                        emails.append(message_id)
+            page += 1
+        return emails
+
     def get_message(self, msgid):
         "Returns the raw e-mail for the given message ID."
         logger.debug(locals())
