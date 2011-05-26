@@ -113,8 +113,12 @@ class CookieScraper(object):
         """
         logger.debug(locals())
         opener = create_opener(top_url(url), self.username, self.password)
-        request = urllib2.Request(url)
-        request.add_header('Cookie', self._cookies.output(attrs=[], header='').strip())
+        if not post_data: 
+		request = urllib2.Request(url) 
+	else: 
+		request = urllib2.Request(url, post_data)
+        
+	request.add_header('Cookie', self._cookies.output(attrs=[], header='').strip())
         for k, v in headers:
             request.add_header(k, v)
         try:
@@ -204,4 +208,14 @@ class OutlookWebScraper(CookieScraper):
             'Cmd': 'delete',
             'ReadForm': '1',
         }))
+
+    def delete_message_list(self, folder, msgid_list):
+        "Deletes the e-mail with the given message ID."
+        logger.debug(locals())
+        if not self.is_logged_in: self.login()
+	
+        return self.get_page(self.base_href + folder, urllib.urlencode({
+            'Cmd': 'delete',
+            'ReadForm': '1',
+        }) +'&'+urllib.urlencode([('MsgId',x) for x in msgid_list]))
     
