@@ -65,13 +65,13 @@ Based on http://code.google.com/p/weboutlook/ by Adrian Holovaty <holovaty@gmail
 # this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 # Place, Suite 330, Boston, MA 02111-1307 USA
 
-import re, socket, urllib, urlparse, urllib2
+import re, socket, urllib, urlparse, urllib2, socket
 from Cookie import SimpleCookie
 import logging
 from logging.handlers import *
 
-__version__ = '0.1.1'
-__author__ = 'Greg Albrecht <gba@gregalbrecht.com>'
+__version__ = '0.1.2'
+__author__ = 'Ravi Kotecha <kotecha.ravi@g'
 
 logger = logging.getLogger('weboutlook')
 logger.setLevel(logging.INFO)
@@ -107,8 +107,7 @@ class CookieScraper(object):
     def __init__(self):
         logger.debug(locals())
         self._cookies = SimpleCookie()
-    
-    
+
     def get_page(self, url, post_data=None, headers=()):
         """
         Helper method that gets the given URL, handling the sending and storing
@@ -125,7 +124,7 @@ class CookieScraper(object):
         for k, v in headers:
             request.add_header(k, v)
         try:
-            f = opener.open(request)
+            f = opener.open(url, post_data)
         except IOError, e:
             if isinstance(e, urllib2.HTTPError):
                 code = e.code
@@ -146,7 +145,6 @@ class CookieScraper(object):
         if f.headers.dict.has_key('set-cookie'):
             self._cookies.load(f.headers.dict['set-cookie'])
         return f.read()
-    
 
 class OutlookWebScraper(CookieScraper):
     def __init__(self, domain, username, password):
@@ -156,8 +154,7 @@ class OutlookWebScraper(CookieScraper):
         self.is_logged_in = False
         self.base_href = None
         super(OutlookWebScraper, self).__init__()
-    
-    
+
     def login(self):
         logger.debug(locals())
         destination = urlparse.urljoin(self.domain, 'exchange/')
@@ -171,22 +168,22 @@ class OutlookWebScraper(CookieScraper):
         if not m:
             forms_dest = urlparse.urljoin(self.domain, 'CookieAuth.dll?Logon')
             post_data = urllib.urlencode({
-                'destination':'Z2F',
+                'destination': urlparse.urljoin(self.domain, 'exchange'),
                 'flags':'0',
                 'username':self.username,
                 'password':self.password,
                 'SubmitCreds':'Log On',
-                'trusted':'0'})
+				'forcedownlevel': '0',
+                'trusted':'4'})
             html = self.get_page(forms_dest, post_data)
             
         m = matcher.search(html)
         import pdb; pdb.set_trace()
         if not m:
             raise RetrievalError, "Couldn't find <base href> on page after logging in."
-        self.base_href      = m.group(1)
-        self.is_logged_in   = True
-    
-    
+        self.base_href = m.group(1)
+        self.is_logged_in = True
+
     def inbox(self):
         """
         Returns the message IDs for all messages on the first page of the
@@ -244,8 +241,7 @@ class OutlookWebScraper(CookieScraper):
         # Sending the "Translate=f" HTTP header tells Outlook to include
         # full e-mail headers. Figuring that out took way too long.
         return self.get_page(self.base_href + msgid + '?Cmd=body', headers=[('Translate', 'f')])
-    
-    
+
     def delete_message(self, msgid):
         "Deletes the e-mail with the given message ID."
         logger.debug(locals())
