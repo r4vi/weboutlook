@@ -129,6 +129,8 @@ class CookieScraper(object):
         except IOError, e:
             if isinstance(e, urllib2.HTTPError):
                 code = e.code
+            elif isinstance(e, urllib2.URLError):
+                code = e.reason
             else:
                 code = e[1]
             if code == 302:
@@ -260,6 +262,5 @@ class OutlookWebScraper(CookieScraper):
         if not self.is_logged_in: self.login()
 	
         return self.get_page(self.base_href + folder,
-                             '&'.join(urllib.urlencode({'Cmd': 'delete','ReadForm': '1',})
-                                      ,urllib.urlencode([('MsgId',x) for x in msgid_list])))
+                             urllib.urlencode({'Cmd': 'delete','ReadForm': '1'})+'&'+urllib.urlencode([('MsgId',x) for x in msgid_list]))
     
