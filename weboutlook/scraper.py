@@ -173,7 +173,7 @@ class OutlookWebScraper(CookieScraper):
                 'username':self.username,
                 'password':self.password,
                 'SubmitCreds':'Log On',
-				'forcedownlevel': '0',
+		'forcedownlevel': '0',
                 'trusted':'4'})
             html = self.get_page(forms_dest, post_data)
             
