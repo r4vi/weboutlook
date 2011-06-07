@@ -136,11 +136,11 @@ class OutlookWebScraper(CookieScraper):
         m = matcher.search(html)
         if not m:
             forms_dest = urlparse.urljoin(self.domain, 'CookieAuth.dll?Logon')
-            post_data = urllib.urlencode({ 'destination': urlparse.urljoin(self.domain, 'exchange'), 'flags':'0', 'username':self.username, 'password':self.password, 'SubmitCreds':'Log On', 'forcedownlevel': '0', 'trusted':'4'})
+            post_data = urllib.urlencode({'destination': urlparse.urljoin(self.domain, 'exchange'), 'flags':'0', 'username':self.username, 'password':self.password, 'SubmitCreds':'Log On', 'forcedownlevel': '0', 'trusted':'4'})
             html = self.get_page(forms_dest, post_data)
             
         m = matcher.search(html)
-        import pdb; pdb.set_trace()
+#        import pdb; pdb.set_trace()
         if not m:
             raise RetrievalError, "Couldn't find <base href> on page after logging in."
         self.base_href = m.group(1)
