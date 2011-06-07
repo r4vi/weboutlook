@@ -136,7 +136,15 @@ class OutlookWebScraper(CookieScraper):
         m = matcher.search(html)
         if not m:
             forms_dest = urlparse.urljoin(self.domain, 'CookieAuth.dll?Logon')
-            post_data = urllib.urlencode({'destination': urlparse.urljoin(self.domain, 'exchange'), 'flags':'0', 'username':self.username, 'password':self.password, 'SubmitCreds':'Log On', 'forcedownlevel': '0', 'trusted':'4'})
+            post_data = urllib.urlencode(
+                {
+                'destination': urlparse.urljoin(self.domain, 'exchange'),
+                'flags':'0',
+                'username':self.username,
+                'password':self.password,
+                'SubmitCreds':'Log On',
+                'forcedownlevel': '0',
+                'trusted':'4'}))
             header = {'Content-Type':'application/x-www-form-urlencoded'}
             html = self.get_page(forms_dest, post_data, headers=header)
             
