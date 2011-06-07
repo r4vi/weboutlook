@@ -66,6 +66,9 @@ Based on http://code.google.com/p/weboutlook/ by Adrian Holovaty <holovaty@gmail
 # Place, Suite 330, Boston, MA 02111-1307 USA
 
 import re, socket, urllib, urlparse, urllib2, socket
+from cookielib import CookieJar
+import requests
+
 from Cookie import SimpleCookie
 import logging
 from logging.handlers import *
@@ -87,15 +90,6 @@ class InvalidLogin(Exception):
 class RetrievalError(Exception):
     pass
 
-def create_opener(base_url, username, password):
-    logger.debug(locals())
-    password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-    password_mgr.add_password(None, base_url, username, password)
-
-    #proxy_support = urllib2.ProxyHandler({"https" : "localhost:8888"})
-
-    handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-    return urllib2.build_opener(handler)
 
 def top_url(url):
     logger.debug(locals())
@@ -106,45 +100,20 @@ class CookieScraper(object):
     "Scraper that keeps track of getting and setting cookies."
     def __init__(self):
         logger.debug(locals())
-        self._cookies = SimpleCookie()
+	self._auth = (self.username, self.password) 
+        self._cookies = CookieJar()
 
-    def get_page(self, url, post_data=None, headers=()):
+    def get_page(self, url, post_data=None, headers={}):
         """
         Helper method that gets the given URL, handling the sending and storing
         of cookies. Returns the requested page as a string.
         """
         logger.debug(locals())
-        opener = create_opener(top_url(url), self.username, self.password)
         if not post_data: 
-		request = urllib2.Request(url) 
-	else: 
-		request = urllib2.Request(url, post_data)
-        
-	request.add_header('Cookie', self._cookies.output(attrs=[], header='').strip())
-        for k, v in headers:
-            request.add_header(k, v)
-        try:
-            f = opener.open(url, post_data)
-        except IOError, e:
-            if isinstance(e, urllib2.HTTPError):
-                code = e.code
-            elif isinstance(e, urllib2.URLError):
-                code = e.reason
-            else:
-                code = e[1]
-            if code == 302:
-                # Got a 302 redirect, but check for cookies before redirecting.
-                # e[3] is a httplib.HTTPMessage instance.
-                if e[3].dict.has_key('set-cookie'):
-                    self._cookies.load(e[3].dict['set-cookie'])
-                return self.get_page(e[3].getheader('location'))
-            elif code == 401:
-                raise InvalidLogin
-            else:
-                raise
-        if f.headers.dict.has_key('set-cookie'):
-            self._cookies.load(f.headers.dict['set-cookie'])
-        return f.read()
+		request = requests.get(url, cookies=self._cookies, auth=self._auth) 
+	else:
+		request = requests.post(url, data=post_data, cookies=self._cookies, headers=headers)
+        return request.content
 
 class OutlookWebScraper(CookieScraper):
     def __init__(self, domain, username, password):
