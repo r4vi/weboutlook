@@ -100,7 +100,7 @@ class CookieScraper(object):
     "Scraper that keeps track of getting and setting cookies."
     def __init__(self):
         logger.debug(locals())
-	self._auth = (self.username, self.password) 
+        self._auth = (self.username, self.password) 
         self._cookies = CookieJar()
 
     def get_page(self, url, post_data=None, headers={}):
@@ -110,9 +110,9 @@ class CookieScraper(object):
         """
         logger.debug(locals())
         if not post_data: 
-		request = requests.get(url, cookies=self._cookies, auth=self._auth) 
-	else:
-		request = requests.post(url, data=post_data, cookies=self._cookies, headers=headers)
+                request = requests.get(url, cookies=self._cookies, auth=self._auth) 
+        else:
+                request = requests.post(url, data=post_data, cookies=self._cookies, headers=headers)
         return request.content
 
 class OutlookWebScraper(CookieScraper):
@@ -137,7 +137,8 @@ class OutlookWebScraper(CookieScraper):
         if not m:
             forms_dest = urlparse.urljoin(self.domain, 'CookieAuth.dll?Logon')
             post_data = urllib.urlencode({'destination': urlparse.urljoin(self.domain, 'exchange'), 'flags':'0', 'username':self.username, 'password':self.password, 'SubmitCreds':'Log On', 'forcedownlevel': '0', 'trusted':'4'})
-            html = self.get_page(forms_dest, post_data)
+            header = {'Content-Type':'application/x-www-form-urlencoded'}
+            html = self.get_page(forms_dest, post_data, headers=header)
             
         m = matcher.search(html)
 #        import pdb; pdb.set_trace()
@@ -218,7 +219,7 @@ class OutlookWebScraper(CookieScraper):
         "Deletes the e-mail with the given message ID."
         logger.debug(locals())
         if not self.is_logged_in: self.login()
-	
+        
         return self.get_page(self.base_href + folder,
                              urllib.urlencode({'Cmd': 'delete','ReadForm': '1'})+'&'+urllib.urlencode([('MsgId',x) for x in msgid_list]))
     
