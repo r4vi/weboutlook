@@ -14,15 +14,15 @@ Retrieve the full, raw source of the e-mail with a given ID.
 Delete an e-mail with a given ID (technically, move it to the 'Deleted Items' folder).
 Documentation / sample usage::
 
-    >>> from weboutlook import OutlookWebScraper
+    >>> from weboutlook import scraper
 
     # Throws InvalidLogin exception for invalid username/password.
-    >>> s = OutlookWebScraper('https://webmaildomain.com', 'username', 'invalid password')
+    >>> s = scraper('https://webmaildomain.com', 'username', 'invalid password')
     >>> s.login() Traceback (most recent call last):
     ...
     scraper.InvalidLogin
 
-    >>> s = OutlookWebScraper('https://webmaildomain.com', 'username', 'correct password')
+    >>> s = scraper('https://webmaildomain.com', 'username', 'correct password')
     >>> s.login()
 
     # Display IDs of messages in the inbox.
