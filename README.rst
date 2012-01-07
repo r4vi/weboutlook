@@ -17,12 +17,12 @@ Documentation / sample usage::
     >>> from weboutlook import scraper
 
     # Throws InvalidLogin exception for invalid username/password.
-    >>> s = scraper('https://webmaildomain.com', 'username', 'invalid password')
+    >>> s = scraper.OutlookWebScraper('https://webmaildomain.com', 'username', 'invalid password')
     >>> s.login() Traceback (most recent call last):
     ...
     scraper.InvalidLogin
 
-    >>> s = scraper('https://webmaildomain.com', 'username', 'correct password')
+    >>> s = scraper.OutlookWebScraper('https://webmaildomain.com', 'username', 'correct password')
     >>> s.login()
 
     # Display IDs of messages in the inbox.
